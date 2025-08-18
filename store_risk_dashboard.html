@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Risk Scoring Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .control-panel {
+            background: rgba(255,255,255,0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: fit-content;
+        }
+
+        .visualization-panel {
+            background: rgba(255,255,255,0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .file-status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #ddd;
+        }
+
+        .status-indicator {
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .status-indicator.ready {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .status-indicator.loading {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+
+        .status-indicator.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+
+        .status-indicator.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .parameter-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .parameter-control {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .parameter-control label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #555;
+            font-size: 0.9rem;
+        }
+
+        .parameter-control input {
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            transition: border-color 0.3s ease;
+        }
+
+        .parameter-control input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .analyze-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .results-container {
+            background: rgba(255,255,255,0.95);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #d63031;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #d63031;
+            margin: 15px 0;
+        }
+
+        .success {
+            background: #e6ffe6;
+            color: #00b894;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #00b894;
+            margin: 15px 0;
+        }
+
+        .info {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #1976d2;
+            margin: 15px 0;
+        }
+
+        .brand-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .brand-tab {
+            padding: 12px 24px;
+            background: none;
+            border: none;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .brand-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .brand-tab:hover {
+            color: #667eea;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .top-stores {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .top-stores h3 {
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .chart-container {
+            height: 300px;
+            margin-bottom: 20px;
+        }
+
+        .component-chart-container {
+            height: 250px;
+            margin-bottom: 20px;
+        }
+
+        .store-table-container {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 10px;
+        }
+
+        .pagination-info {
+            margin: 0 15px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .pagination-button {
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-button:hover:not(:disabled) {
+            background: #667eea;
+            color: white;
+        }
+
+        .pagination-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .sort-controls {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .results-info {
+            font-size: 0.9rem;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .sort-btn {
+            padding: 6px 12px;
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .sort-btn:hover {
+            background: #e9ecef;
+            border-color: #667eea;
+        }
+
+        .sort-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .page-btn {
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            color: #667eea;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .page-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .page-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .page-ellipsis {
+            color: #667eea;
+            padding: 0 4px;
+        }
+
+        .page-size-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .page-size-select {
+            padding: 6px 10px;
+            border: 1px solid #667eea;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #667eea;
+            background: white;
+            cursor: pointer;
+        }
+
+        .page-size-select:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: #666;
+            margin-right: 15px;
+        }
+
+        .page-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .page-btn.active {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .page-btn:disabled {
+            background: #f8f9fa;
+            color: #ccc;
+            cursor: not-allowed;
+            border-color: #e9ecef;
+        }
+
+        .page-info {
+            padding: 10px 15px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            color: #667eea;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .page-ellipsis {
+            padding: 10px 6px;
+            color: #667eea;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .page-size-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+        }
+
+        .page-size-controls label {
+            font-size: 0.9rem;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .page-size-select {
+            padding: 8px 12px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            background: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .page-size-select:focus {
+            outline: none;
+            border-color: #764ba2;
+            box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .pagination-container {
+                flex-direction: column;
+                align-items: center;
+                gap: 10px;
+            }
+            
+            .pagination-controls {
+                order: 2;
+            }
+            
+            .page-size-controls {
+                order: 1;
+            }
+            
+            .table-controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .results-info {
+                text-align: center;
+            }
+        }
+
+        .store-table-header {
+            display: grid;
+            grid-template-columns: 60px 1fr 200px;
+            gap: 15px;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .store-table-row {
+            display: grid;
+            grid-template-columns: 60px 1fr 200px;
+            gap: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 6px;
+            margin-bottom: 3px;
+            align-items: center;
+            border-left: 4px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .store-table-row:hover {
+            background: #f8f9fa;
+            transform: translateX(2px);
+        }
+
+        .store-table-row.high-risk {
+            border-left-color: #ff6b6b;
+        }
+
+        .store-table-row.medium-risk {
+            border-left-color: #feca57;
+        }
+
+        .store-table-row.low-risk {
+            border-left-color: #48dbfb;
+        }
+
+        .store-rank {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .store-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .store-name {
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .store-rank-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .store-scores {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .total-score {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 12px;
+            color: white;
+            margin-bottom: 4px;
+        }
+
+        .total-score.high {
+            background: #ff6b6b;
+        }
+
+        .total-score.medium {
+            background: #feca57;
+        }
+
+        .total-score.low {
+            background: #48dbfb;
+        }
+
+        .component-scores {
+            font-size: 0.8rem;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Store Risk Scoring Dashboard</h1>
+            <p>Automated analysis using the latest sales data and performance metrics</p>
+        </div>
+
+        <div class="dashboard">
+            <div class="control-panel">
+                <div class="section">
+                    <h3>📁 Data Files</h3>
+                    <div id="fileStatus">
+                        <div class="file-status-item">
+                            <span>📊 Current Sales Data (8-11-2025)</span>
+                            <span id="currentSalesStatus" class="status-indicator ready">⏳ Ready to load</span>
+                        </div>
+                        <div class="file-status-item">
+                            <span>📈 Historical Sales Data (2024-08-04)</span>
+                            <span id="historicalSalesStatus" class="status-indicator ready">⏳ Ready to load</span>
+                        </div>
+                        <div class="file-status-item">
+                            <span>🎯 Threshold Files</span>
+                            <span id="thresholdsStatus" class="status-indicator ready">⏳ Ready to load</span>
+                        </div>
+                        <div class="file-status-item">
+                            <span>🏷️ Category & Store Mappings</span>
+                            <span id="mappingsStatus" class="status-indicator ready">⏳ Ready to load</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>⚙️ Anomaly Weights</h3>
+                    <div class="parameter-group">
+                        <div class="parameter-control">
+                            <label>Core UB Weight</label>
+                            <input type="number" id="coreUb" value="2" step="0.1">
+                        </div>
+                        <div class="parameter-control">
+                            <label>Core LB Weight</label>
+                            <input type="number" id="coreLb" value="3" step="0.1">
+                        </div>
+                        <div class="parameter-control">
+                            <label>Innovation UB Weight</label>
+                            <input type="number" id="innovationUb" value="1" step="0.1">
+                        </div>
+                        <div class="parameter-control">
+                            <label>Innovation LB Weight</label>
+                            <input type="number" id="innovationLb" value="2" step="0.1">
+                        </div>
+                        <div class="parameter-control">
+                            <label>Other UB Weight</label>
+                            <input type="number" id="otherUb" value="0.2" step="0.1">
+                        </div>
+                        <div class="parameter-control">
+                            <label>Other LB Weight</label>
+                            <input type="number" id="otherLb" value="0.5" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h3>📊 Performance Parameters</h3>
+                    <div class="parameter-group">
+                        <div class="parameter-control">
+                            <label>Cross Category Bonus</label>
+                            <input type="number" id="crossCategoryBonus" value="5" step="1">
+                        </div>
+                        <div class="parameter-control">
+                            <label>YOY Weight</label>
+                            <input type="number" id="yoyWeight" value="2" step="0.1">
+                        </div>
+                        <div class="parameter-control">
+                            <label>Peer Weight</label>
+                            <input type="number" id="peerWeight" value="3" step="0.1">
+                        </div>
+                        <div class="parameter-control">
+                            <label>YOY Threshold</label>
+                            <input type="number" id="yoyThreshold" value="-0.05" step="0.01">
+                        </div>
+                        <div class="parameter-control">
+                            <label>Peer Threshold</label>
+                            <input type="number" id="peerThreshold" value="-0.10" step="0.01">
+                        </div>
+                        <div class="parameter-control">
+                            <label>Min Mean Alert</label>
+                            <input type="number" id="minMeanAlert" value="1" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <button class="analyze-btn" onclick="testClick()">
+                    🎯 Test JavaScript
+                </button>
+
+                <button class="analyze-btn" onclick="runAnalysis()" style="margin-top: 10px;">
+                    🔍 Load Data & Analyze Store Risk
+                </button>
+
+                <div class="loading-spinner" id="mainLoadingSpinner">
+                    <div class="spinner"></div>
+                    <div class="loading-text" id="loadingText">Running analysis...</div>
+                </div>
+
+                <div id="status"></div>
+            </div>
+
+            <div class="visualization-panel">
+                <div class="chart-container">
+                    <canvas id="riskChart"></canvas>
+                </div>
+                <div class="component-chart-container">
+                    <canvas id="componentChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-container" id="resultsContainer">
+            <div class="brand-tabs">
+                <button class="brand-tab active" onclick="switchBrand('ulta')">Ulta</button>
+                <button class="brand-tab" onclick="switchBrand('sephora')">Sephora</button>
+            </div>
+
+            <div id="ultaResults" class="brand-results">
+                <div class="stats-grid" id="ultaStats"></div>
+                <div class="top-stores">
+                    <h3>Top Risk Stores - Ulta</h3>
+                    <div id="ultaStoreList"></div>
+                </div>
+            </div>
+
+            <div id="sephoraResults" class="brand-results" style="display: none;">
+                <div class="stats-grid" id="sephoraStats"></div>
+                <div class="top-stores">
+                    <h3>Top Risk Stores - Sephora</h3>
+                    <div id="sephoraStoreList"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('🚀 Script starting...');
+
+        // File URLs - relative paths in the same GitHub repo
+        const FILE_URLS = {
+            ultaWeekly: './8-11-2025_Ulta_Sales.csv',
+            sephoraWeekly: './8-11-2025_Sephora_Sales.csv',
+            ultaHistorical: './2024-08-04_Ulta_Sales.csv',
+            sephoraHistorical: './2024-08-04_Sephora_Sales.csv',
+            ultaThresholds: './ulta_thresholds.xlsx',
+            sephoraThresholds: './sephora_thresholds.xlsx',
+            categoryMapping: './SKU_category_mapping.xlsx',
+            storeCategories: './store_categories.xlsx'
+        };
+
+        // Global configuration - matches Python exactly
+        let config = {
+            anomalyWeights: {
+                core: { ub: 2, lb: 3 },
+                innovation: { ub: 1, lb: 2 },
+                other: { ub: 0.2, lb: 0.5 }
+            },
+            crossCategoryBonus: 5,
+            yoyWeight: 2,
+            peerWeight: 3,
+            yoyThreshold: -0.05,
+            peerThreshold: -0.10,
+            minMeanAlert: 1
+        };
+
+        // Data storage
+        let data = {
+            ultaWeekly: null,
+            sephoraWeekly: null,
+            ultaThresholds: null,
+            sephoraThresholds: null,
+            categoryMapping: null,
+            storeCategories: null,
+            ultaHistorical: null,
+            sephoraHistorical: null
+        };
+
+        let results = {
+            ulta: [],
+            sephora: []
+        };
+
+        // Test function - defined first
+        function testClick() {
+            console.log('🎯 Test button clicked!');
+            alert('JavaScript is working!');
+        }
+
+        function showStatus(message, type) {
+            const statusEl = document.getElementById('status');
+            statusEl.innerHTML = `<div class="${type}">${message}</div>`;
+        }
+
+        function updateFileStatus(category, status, message = '') {
+            const statusElement = document.getElementById(`${category}Status`);
+            if (statusElement) {
+                statusElement.className = `status-indicator ${status}`;
+                const statusText = {
+                    ready: '⏳ Ready to load',
+                    loading: '🔄 Loading...',
+                    success: '✅ Loaded',
+                    error: '❌ Error'
+                };
+                statusElement.textContent = message || statusText[status];
+            }
+        }
+
+        function updateConfig() {
+            config.anomalyWeights.core.ub = parseFloat(document.getElementById('coreUb').value);
+            config.anomalyWeights.core.lb = parseFloat(document.getElementById('coreLb').value);
+            config.anomalyWeights.innovation.ub = parseFloat(document.getElementById('innovationUb').value);
+            config.anomalyWeights.innovation.lb = parseFloat(document.getElementById('innovationLb').value);
+            config.anomalyWeights.other.ub = parseFloat(document.getElementById('otherUb').value);
+            config.anomalyWeights.other.lb = parseFloat(document.getElementById('otherLb').value);
+            config.crossCategoryBonus = parseFloat(document.getElementById('crossCategoryBonus').value);
+            config.yoyWeight = parseFloat(document.getElementById('yoyWeight').value);
+            config.peerWeight = parseFloat(document.getElementById('peerWeight').value);
+            config.yoyThreshold = parseFloat(document.getElementById('yoyThreshold').value);
+            config.peerThreshold = parseFloat(document.getElementById('peerThreshold').value);
+            config.minMeanAlert = parseFloat(document.getElementById('minMeanAlert').value);
+        }
+
+        async function loadFileFromURL(url) {
+            console.log(`Loading file from: ${url}`);
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            
+            if (url.toLowerCase().endsWith('.csv')) {
+                const text = new TextDecoder().decode(arrayBuffer);
+                const parsed = Papa.parse(text, { header: true, skipEmptyLines: true });
+                console.log(`Loaded CSV with ${parsed.data.length} rows`);
+                return parsed.data;
+            } else {
+                const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+                const result = {};
+                workbook.SheetNames.forEach(sheetName => {
+                    result[sheetName] = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+                });
+                console.log(`Loaded Excel with sheets: ${Object.keys(result).join(', ')}`);
+                return result;
+            }
+        }
+
+        async function loadAllFiles() {
+            try {
+                console.log('Starting to load all files...');
+                
+                updateFileStatus('currentSales', 'loading');
+                updateFileStatus('historicalSales', 'loading');
+                updateFileStatus('thresholds', 'loading');
+                updateFileStatus('mappings', 'loading');
+
+                // Load current sales data
+                data.ultaWeekly = await loadFileFromURL(FILE_URLS.ultaWeekly);
+                data.sephoraWeekly = await loadFileFromURL(FILE_URLS.sephoraWeekly);
+                updateFileStatus('currentSales', 'success');
+
+                // Load historical data
+                data.ultaHistorical = await loadFileFromURL(FILE_URLS.ultaHistorical);
+                data.sephoraHistorical = await loadFileFromURL(FILE_URLS.sephoraHistorical);
+                updateFileStatus('historicalSales', 'success');
+
+                // Load thresholds
+                const ultaThresholdsData = await loadFileFromURL(FILE_URLS.ultaThresholds);
+                const sephoraThresholdsData = await loadFileFromURL(FILE_URLS.sephoraThresholds);
+                data.ultaThresholds = ultaThresholdsData.analysis || ultaThresholdsData[Object.keys(ultaThresholdsData)[0]];
+                data.sephoraThresholds = sephoraThresholdsData.analysis || sephoraThresholdsData[Object.keys(sephoraThresholdsData)[0]];
+                updateFileStatus('thresholds', 'success');
+
+                // Load mappings
+                data.categoryMapping = await loadFileFromURL(FILE_URLS.categoryMapping);
+                data.storeCategories = await loadFileFromURL(FILE_URLS.storeCategories);
+                updateFileStatus('mappings', 'success');
+
+                console.log('All files loaded successfully!');
+                showStatus('All files loaded successfully! Analysis complete.', 'success');
+                return true;
+
+            } catch (error) {
+                console.error('Error loading files:', error);
+                showStatus(`Failed to load files: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // Simple run analysis function for testing
+        async function runAnalysis() {
+            console.log('🚀 runAnalysis called!');
+            updateConfig();
+            
+            try {
+                document.getElementById('mainLoadingSpinner').style.display = 'block';
+                document.getElementById('loadingText').textContent = 'Loading files...';
+                
+                const success = await loadAllFiles();
+                
+                if (success) {
+                    document.getElementById('loadingText').textContent = 'Processing data...';
+                    
+                    console.log('Cleaning SKU data with JSON artifacts...');
+                    // Clean SKUs using cleanSkuJson (matches Python clean_sku_json)
+                    data.ultaWeekly.forEach(row => {
+                        row['Reporting_SKU_Desc'] = cleanSkuJson(row['Reporting_SKU_Desc']);
+                        row['QtySold'] = cleanNumeric(row['QtySold']);
+                    });
+                    data.sephoraWeekly.forEach(row => {
+                        row['Reporting_SKU_Desc'] = cleanSkuJson(row['Reporting_SKU_Desc']);
+                        row['QtySold'] = cleanNumeric(row['QtySold']);
+                    });
+                    
+                    // Filter out null/negative quantities and sales
+                    data.ultaWeekly = data.ultaWeekly.filter(row => 
+                        row['QtySold'] !== null && row['QtySold'] >= 0
+                    );
+                    data.sephoraWeekly = data.sephoraWeekly.filter(row => 
+                        row['QtySold'] !== null && row['QtySold'] >= 0
+                    );
+                    
+                    console.log('Filtering out discontinued products...');
+                    // Filter discontinued products (matches Python logic)
+                    data.ultaWeekly = filterDiscontinuedProducts(data.ultaWeekly, 'Ulta');
+                    data.sephoraWeekly = filterDiscontinuedProducts(data.sephoraWeekly, 'Sephora');
+                    
+                    document.getElementById('loadingText').textContent = 'Running analysis...';
+                    
+                    console.log('Creating mappings...');
+                    const categoryMapping = createCategoryMapping();
+                    const storeRanks = createStoreRanks();
+                    
+                    console.log('Detecting anomalies...');
+                    const ultaAnomalies = detectStoreAnomalies(data.ultaWeekly, 'ulta', categoryMapping, data.ultaThresholds);
+                    const sephoraAnomalies = detectStoreAnomalies(data.sephoraWeekly, 'sephora', categoryMapping, data.sephoraThresholds);
+                    
+                    console.log('Scoring stores...');
+                    results.ulta = scoreStores(data.ultaWeekly, ultaAnomalies, 'ulta', storeRanks.ulta, data.ultaHistorical);
+                    results.sephora = scoreStores(data.sephoraWeekly, sephoraAnomalies, 'sephora', storeRanks.sephora, data.sephoraHistorical);
+                    
+                    document.getElementById('loadingText').textContent = 'Analysis complete!';
+                    displayResults();
+                    
+                    setTimeout(() => {
+                        document.getElementById('mainLoadingSpinner').style.display = 'none';
+                        showStatus(`Analysis complete! Found ${results.ulta.length} Ulta stores and ${results.sephora.length} Sephora stores with risk scores.`, 'success');
+                    }, 1000);
+                } else {
+                    document.getElementById('mainLoadingSpinner').style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('Analysis error:', error);
+                document.getElementById('mainLoadingSpinner').style.display = 'none';
+                showStatus(`Analysis failed: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize empty charts when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 DOM loaded!');
+            showStatus('Ready to load files and run analysis!', 'info');
+            
+            // Initialize empty component chart
+            initializeEmptyComponentChart();
+        });
+
+        function initializeEmptyComponentChart() {
+            const ctx = document.getElementById('componentChart');
+            if (!ctx) {
+                console.error('Component chart canvas not found');
+                return;
+            }
+            
+            componentChart = new Chart(ctx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: ['Waiting for analysis...'],
+                    datasets: [{
+                        data: [1],
+                        backgroundColor: ['rgba(200, 200, 200, 0.8)'],
+                        borderColor: ['rgba(200, 200, 200, 1)'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Risk Score Components',
+                            font: { size: 12 }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: { font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        console.log('🚀 Script loaded successfully!');
+
+        // Utility functions
+        function cleanSku(sku) {
+            if (!sku) return '';
+            sku = String(sku);
+            // Remove JSON artifacts
+            sku = sku.replace(/^\{\s*"\s*"\s*:\s*"?/, '');
+            sku = sku.replace(/\}$/, '');
+            sku = sku.split(/\t| {2,}/)[0];
+            sku = sku.replace(/"/g, '');
+            // Normalize
+            sku = sku.replace(/\s+/g, ' ').trim();
+            return sku;
+        }
+
+        function cleanSkuJson(sku) {
+            // Matches Python clean_sku_json exactly
+            if (typeof sku === 'number') {
+                sku = String(sku);
+            }
+
+            if (typeof sku === 'string') {
+                // Remove leading {"": and trailing }
+                sku = sku.replace(/^\{\s*"\s*"\s*:\s*"?/, '');
+                sku = sku.replace(/\}$/, '');
+                // Split on a tab or ≥2 spaces, keep just the first piece
+                sku = sku.split(/\t| {2,}/)[0];
+                // Drop any leading stray quote
+                sku = sku.replace(/^"/, '').replace(/"$/, '');
+            }
+
+            // Normalization (simplified Unicode normalization)
+            sku = sku.replace(/\u00A0/g, ' '); // Non-breaking space
+            sku = sku.replace(/\s+/g, ' ').trim();
+
+            return sku;
+        }
+
+        function cleanNumeric(val) {
+            // Matches Python clean_numeric exactly
+            if (val === null || val === undefined || val === '') return null;
+            const num = String(val).replace(/[^\d\-\.]/g, '');  // keep digits, dot, minus
+            try {
+                return parseFloat(num);
+            } catch {
+                return null;
+            }
+        }
+
+        function parseThresholdString(thresholdStr) {
+            // Matches Python parse_threshold_string exactly
+            if (!thresholdStr || typeof thresholdStr !== 'string') {
+                return { mean: null, std: null, lb: null, ub: null, lastSold: null };
+            }
+
+            thresholdStr = thresholdStr.trim();
+            const parts = thresholdStr.split(',').map(p => p.trim());
+            
+            if (parts.length === 5) {
+                try {
+                    const mean = parseFloat(parts[0].split(':')[1].trim());
+                    const std = parseFloat(parts[1].split(':')[1].trim());
+                    const lb = parseFloat(parts[2].split(':')[1].trim());
+                    const ub = parseFloat(parts[3].split(':')[1].trim());
+                    const lastSold = parts[4].split(':', 2)[1].trim();
+                    return { mean, std, lb, ub, lastSold };
+                } catch (e) {
+                    console.error('Error parsing 5-part threshold string:', e);
+                    return { mean: null, std: null, lb: null, ub: null, lastSold: null };
+                }
+            } else if (parts.length === 3 && parts[2].toLowerCase().startsWith('last sold date')) {
+                try {
+                    const mean = parseFloat(parts[0].split(':')[1].trim());
+                    const std = parseFloat(parts[1].split(':')[1].trim());
+                    const lb = mean - 2.0 * std;
+                    const ub = mean + 2.0 * std;
+                    const lastSold = parts[2].split(':', 2)[1].trim();
+                    return { mean, std, lb, ub, lastSold };
+                } catch (e) {
+                    console.error('Error parsing 3-part threshold string:', e);
+                    return { mean: null, std: null, lb: null, ub: null, lastSold: null };
+                }
+            } else if (parts.length === 4) {
+                try {
+                    const mean = parseFloat(parts[0].split(':')[1].trim());
+                    const std = parseFloat(parts[1].split(':')[1].trim());
+                    const lb = parseFloat(parts[2].split(':')[1].trim());
+                    const ub = parseFloat(parts[3].split(':')[1].trim());
+                    return { mean, std, lb, ub, lastSold: null };
+                } catch (e) {
+                    console.error('Error parsing 4-part threshold string:', e);
+                    return { mean: null, std: null, lb: null, ub: null, lastSold: null };
+                }
+            } else if (parts.length === 2) {
+                try {
+                    const mean = parseFloat(parts[0].split(':')[1].trim());
+                    const std = parseFloat(parts[1].split(':')[1].trim());
+                    const lb = mean - 2.0 * std;
+                    const ub = mean + 2.0 * std;
+                    return { mean, std, lb, ub, lastSold: null };
+                } catch (e) {
+                    console.error('Error parsing 2-part threshold string:', e);
+                    return { mean: null, std: null, lb: null, ub: null, lastSold: null };
+                }
+            } else {
+                console.debug(`Unrecognized threshold format for '${thresholdStr}'`);
+                return { mean: null, std: null, lb: null, ub: null, lastSold: null };
+            }
+        }
+
+        function filterDiscontinuedProducts(data, brand) {
+            // Matches Python filter_discontinued_products exactly
+            const skuCol = "Reporting_SKU_Desc";
+            
+            // Calculate total qty sold per SKU across all stores
+            const skuTotals = {};
+            data.forEach(row => {
+                const sku = row[skuCol];
+                const qty = cleanNumeric(row['QtySold']) || 0;
+                if (!skuTotals[sku]) skuTotals[sku] = 0;
+                skuTotals[sku] += qty;
+            });
+            
+            // Identify discontinued SKUs (0 total sales)
+            const discontinuedSkus = Object.entries(skuTotals)
+                .filter(([sku, total]) => total === 0)
+                .map(([sku, total]) => sku);
+            
+            if (discontinuedSkus.length > 0) {
+                console.log(`${brand}: Found ${discontinuedSkus.length} discontinued SKUs (0 total sales)`);
+                console.log(`${brand}: Discontinued SKUs: ${discontinuedSkus.slice(0, 10).join(', ')}${discontinuedSkus.length > 10 ? '...' : ''}`);
+                
+                // Filter out discontinued SKUs
+                const filtered = data.filter(row => !discontinuedSkus.includes(row[skuCol]));
+                
+                console.log(`${brand}: Filtered out ${data.length - filtered.length} rows with discontinued SKUs`);
+                console.log(`${brand}: ${filtered.length} rows remaining after filtering`);
+                
+                return filtered;
+            } else {
+                console.log(`${brand}: No discontinued SKUs found`);
+                return data;
+            }
+        }
+
+        function createCategoryMapping() {
+            if (!data.categoryMapping) return { ulta: [], sephora: [] };
+            
+            return {
+                ulta: data.categoryMapping.ulta || [],
+                sephora: data.categoryMapping.sephora || []
+            };
+        }
+
+        function createStoreRanks() {
+            if (!data.storeCategories) return { ulta: {}, sephora: {} };
+            
+            const ultaRanks = {};
+            const sephoraRanks = {};
+            
+            if (data.storeCategories.ulta) {
+                data.storeCategories.ulta.forEach(row => {
+                    if (row.Store && row['Store Rank']) {
+                        ultaRanks[row.Store] = row['Store Rank'];
+                    }
+                });
+            }
+            
+            if (data.storeCategories.Sephora) {
+                data.storeCategories.Sephora.forEach(row => {
+                    if (row.Store && row['Store Rank']) {
+                        sephoraRanks[String(row.Store).padStart(4, '0')] = row['Store Rank'];
+                    }
+                });
+            }
+            
+            return { ulta: ultaRanks, sephora: sephoraRanks };
+        }
+
+        function detectStoreAnomalies(weeklyData, brand, categoryMapping, thresholds) {
+            console.log(`Detecting anomalies for ${brand}...`);
+            const storeAnomalies = {};
+            const storeField = brand === 'ulta' ? 'ULTAStoreNo' : 'SEPHORAStoreNo';
+            const currentDate = new Date();
+            
+            // Group by store
+            const storeGroups = {};
+            weeklyData.forEach(row => {
+                const store = row[storeField];
+                if (!store) return;
+                
+                if (!storeGroups[store]) {
+                    storeGroups[store] = [];
+                }
+                storeGroups[store].push(row);
+            });
+
+            Object.entries(storeGroups).forEach(([store, group]) => {
+                // Initialize anomaly structure for this store
+                if (!storeAnomalies[store]) {
+                    storeAnomalies[store] = {
+                        core: { ub: 0, lb: 0 },
+                        innovation: { ub: 0, lb: 0 },
+                        other: { ub: 0, lb: 0 }
+                    };
+                }
+
+                group.forEach(row => {
+                    const sku = cleanSku(row['Reporting_SKU_Desc']);
+                    const qty = cleanNumeric(row['QtySold']);
+                    
+                    if (qty === null || qty < 0) return;
+
+                    // Find threshold for this SKU and store
+                    const storePrefix = brand === 'ulta' ? 'ULTA Store No ' : 'SEPHORA Store No ';
+                    const storeCol = `${storePrefix}${store}`;
+                    
+                    let threshold = null;
+                    if (thresholds) {
+                        const thresholdRow = thresholds.find(t => cleanSku(t['Reporting SKU Desc']) === sku);
+                        if (thresholdRow && thresholdRow[storeCol]) {
+                            threshold = parseThresholdString(thresholdRow[storeCol]);
+                        }
+                    }
+
+                    if (!threshold || !threshold.mean || threshold.mean < config.minMeanAlert) {
+                        return;
+                    }
+
+                    // Get SKU category
+                    const brandCategories = categoryMapping && categoryMapping[brand] ? categoryMapping[brand] : [];
+                    let category = 'other';
+                    
+                    brandCategories.forEach(catRow => {
+                        ['Core', 'Innovation', 'Other'].forEach(cat => {
+                            if (catRow[cat] && cleanSku(catRow[cat]) === sku) {
+                                category = cat.toLowerCase();
+                            }
+                        });
+                    });
+
+                    // Check for anomalies - matches Python logic exactly
+                    if (threshold.mean >= 1) {
+                        if (qty === 0) {
+                            storeAnomalies[store][category]['lb']++;
+                        } else if (qty < threshold.lb) {
+                            storeAnomalies[store][category]['lb']++;
+                        } else if (qty > threshold.ub) {
+                            storeAnomalies[store][category]['ub']++;
+                        }
+                    } else {
+                        // For mean < 1, check expected interval logic
+                        const expectedInterval = threshold.mean > 0 ? 1.0 / threshold.mean : null;
+                        if (qty === 0 && expectedInterval) {
+                            // Gap weeks calculation would go here, but simplified for now
+                            storeAnomalies[store][category]['lb']++;
+                        } else if (qty < threshold.lb) {
+                            storeAnomalies[store][category]['lb']++;
+                        }
+                    }
+                });
+            });
+
+            // Remove stores with no anomalies (matches Python logic)
+            const filteredAnomalies = {};
+            Object.entries(storeAnomalies).forEach(([store, anomalies]) => {
+                const hasAnomalies = ['core', 'innovation', 'other'].some(cat => 
+                    anomalies[cat]['ub'] + anomalies[cat]['lb'] > 0
+                );
+                if (hasAnomalies) {
+                    filteredAnomalies[store] = anomalies;
+                }
+            });
+
+            return filteredAnomalies;
+        }
+
+        function calculateAnomalyScore(storeAnomalies) {
+            // Matches Python calculate_anomaly_score exactly
+            let score = 0;
+            const categoriesWithAnomalies = new Set();
+
+            // Iterate through categories in the same order as Python
+            ['core', 'innovation', 'other'].forEach(category => {
+                ['ub', 'lb'].forEach(alertType => {
+                    const count = storeAnomalies[category] ? (storeAnomalies[category][alertType] || 0) : 0;
+                    if (count > 0) {
+                        categoriesWithAnomalies.add(category);
+                        const basePoints = config.anomalyWeights[category][alertType];
+                        score += basePoints * count;  // Simple: count * base weight
+                    }
+                });
+            });
+
+            // Cross-category bonus
+            if (categoriesWithAnomalies.size > 1) {
+                score += config.crossCategoryBonus;
+            }
+
+            return score;
+        }
+
+        function calculateYoyScore(currentSales, historicalSales) {
+            // Matches Python calculate_yoy_score exactly
+            if (!historicalSales || historicalSales === 0) return 0;
+            
+            const yoyChange = (currentSales - historicalSales) / historicalSales;
+            
+            // Only penalize if performance exceeds the negative threshold
+            if (yoyChange >= config.yoyThreshold) return 0;
+            
+            // Calculate penalty for performance worse than threshold
+            const excessPenalty = Math.abs(yoyChange - config.yoyThreshold);
+            const penaltyPercentage = excessPenalty * 100;
+            return penaltyPercentage * config.yoyWeight;
+        }
+
+        function calculatePeerScoreYoy(storeYoy, peerYoyAverage) {
+            // Matches Python calculate_peer_score_yoy exactly
+            // Calculate deviation from peer average YoY
+            const deviation = storeYoy - peerYoyAverage;
+            
+            // Only penalize if performance is significantly worse than peers
+            if (deviation >= config.peerThreshold) return 0;
+            
+            // Calculate penalty for performance worse than threshold  
+            const excessPenalty = Math.abs(deviation - config.peerThreshold);
+            const penaltyPercentage = excessPenalty * 100;
+            return penaltyPercentage * config.peerWeight;
+        }
+
+        function scoreStores(weeklyData, storeAnomalies, brand, storeRanks, historicalData = null) {
+            console.log(`Scoring stores for ${brand}...`);
+            const storeField = brand === 'ulta' ? 'ULTAStoreNo' : 'SEPHORAStoreNo';
+            
+            // Get current week totals by store (matches Python get_current_week_totals)
+            const currentTotals = {};
+            
+            // Check for available sales columns (matches Python logic)
+            const possibleSalesCols = ['GrossSales', 'Gross Sales', 'GrossSales_Amount', 'Sales', 'TotalSales'];
+            let salesCol = null;
+            
+            for (const col of possibleSalesCols) {
+                if (weeklyData.length > 0 && weeklyData[0].hasOwnProperty(col)) {
+                    salesCol = col;
+                    console.log(`Using column '${col}' for gross sales`);
+                    break;
+                }
+            }
+            
+            if (!salesCol) {
+                console.warn("No gross sales column found. Falling back to QtySold");
+                // Fallback to QtySold if no sales column found
+                weeklyData.forEach(row => {
+                    const store = row[storeField];
+                    const qty = cleanNumeric(row['QtySold']) || 0;
+                    if (qty >= 0) {
+                        if (!currentTotals[store]) currentTotals[store] = 0;
+                        currentTotals[store] += qty;
+                    }
+                });
+            } else {
+                weeklyData.forEach(row => {
+                    const store = row[storeField];
+                    const sales = cleanNumeric(row[salesCol]) || 0;
+                    if (sales >= 0) {
+                        if (!currentTotals[store]) currentTotals[store] = 0;
+                        currentTotals[store] += sales;
+                    }
+                });
+            }
+
+            // Historical data lookup (using TotalGrossSales) - matches Python exactly
+            const historicalTotals = {};
+            if (historicalData && historicalData.length > 0) {
+                const historicalStoreField = brand === 'ulta' ? 'ULTAStoreNo' : 'SEPHORAStoreNo';
+                
+                historicalData.forEach(row => {
+                    const store = row[historicalStoreField];
+                    const sales = cleanNumeric(row['TotalGrossSales']) || 0;
+                    
+                    if (!historicalTotals[store]) historicalTotals[store] = 0;
+                    historicalTotals[store] += sales;
+                });
+            }
+
+            // Calculate YoY performance for each store - matches Python exactly
+            const storeYoyPerformance = {};
+            Object.entries(currentTotals).forEach(([storeNo, currentSales]) => {
+                const historicalSales = historicalTotals[storeNo] || 0;
+                if (historicalSales > 0) {
+                    const yoyChange = (currentSales - historicalSales) / historicalSales;
+                    storeYoyPerformance[storeNo] = yoyChange;
+                }
+            });
+
+            // Calculate peer YoY averages by rank (same door comp) - matches Python exactly
+            const rankYoyAverages = {};
+            const rankYoyStores = {};
+            
+            // Group YoY performance by rank
+            Object.entries(storeYoyPerformance).forEach(([storeNo, yoyPerformance]) => {
+                const rank = storeRanks[storeNo] || 'Unknown';
+                if (!rankYoyStores[rank]) {
+                    rankYoyStores[rank] = [];
+                }
+                rankYoyStores[rank].push(yoyPerformance);
+            });
+            
+            // Calculate average YoY for each rank
+            Object.entries(rankYoyStores).forEach(([rank, yoyList]) => {
+                rankYoyAverages[rank] = yoyList.length > 0 ? yoyList.reduce((sum, val) => sum + val, 0) / yoyList.length : 0;
+            });
+
+            // Get all stores (union of current sales and anomaly data) - matches Python
+            const allStores = new Set([...Object.keys(currentTotals), ...Object.keys(storeAnomalies)]);
+            const storeScores = [];
+
+            allStores.forEach(store => {
+                const currentSales = currentTotals[store] || 0;
+                
+                // Anomaly score
+                const storeAnomalyData = storeAnomalies[store] || {};
+                const anomalyScore = calculateAnomalyScore(storeAnomalyData);
+                
+                // YOY score (using gross sales) - matches Python exactly
+                const historicalSales = historicalTotals[store] || 0;
+                const yoyScore = historicalSales > 0 ? calculateYoyScore(currentSales, historicalSales) : 0;
+                
+                // Peer score (rank-based YoY comparison) - matches Python exactly
+                const storeRank = storeRanks[store] || 'Unknown';
+                const storeYoy = storeYoyPerformance[store] || 0;
+                const peerYoyAverage = rankYoyAverages[storeRank] || 0;
+                
+                // Use YoY values for peer comparison instead of absolute sales
+                const peerScore = store in storeYoyPerformance ? 
+                    calculatePeerScoreYoy(storeYoy, peerYoyAverage) : 0;
+                
+                // Total risk score
+                const totalScore = anomalyScore + yoyScore + peerScore;
+                
+                // Skip stores with zero score (no issues detected) - matches Python exactly
+                if (totalScore === 0) return;
+                
+                storeScores.push({
+                    storeNumber: store,
+                    storeName: `Store ${store}`,
+                    storeRank: storeRank,
+                    totalRiskScore: Math.round(totalScore * 100) / 100,
+                    anomalyScore: Math.round(anomalyScore * 100) / 100,
+                    yoyScore: Math.round(yoyScore * 100) / 100,
+                    peerScore: Math.round(peerScore * 100) / 100,
+                    currentWeekSales: Math.round(currentSales * 100) / 100,
+                    historicalSales: Math.round(historicalSales * 100) / 100,
+                    storeYoyPerformance: store in storeYoyPerformance ? 
+                        Math.round(storeYoy * 10000) / 100 : 0, // Convert to percentage
+                    rankPeerYoyAverage: Math.round(peerYoyAverage * 10000) / 100, // Convert to percentage
+                    hasYoyData: historicalSales > 0
+                });
+            });
+
+            return storeScores.sort((a, b) => b.totalRiskScore - a.totalRiskScore);
+        }
+
+        let currentChart = null;
+        let componentChart = null;
+
+        function updateChart() {
+            updateRiskChart();
+            // Add a small delay to ensure DOM is ready
+            setTimeout(() => {
+                updateComponentChart();
+            }, 100);
+        }
+
+        function updateRiskChart() {
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            const ultaScores = results.ulta.slice(0, 10).map(s => s.totalRiskScore);
+            const sephoraScores = results.sephora.slice(0, 10).map(s => s.totalRiskScore);
+            const labels = Array.from({length: Math.max(ultaScores.length, sephoraScores.length)}, (_, i) => `Top ${i + 1}`);
+
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Ulta Risk Scores',
+                            data: ultaScores,
+                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                            borderColor: 'rgba(102, 126, 234, 1)',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Sephora Risk Scores',
+                            data: sephoraScores,
+                            backgroundColor: 'rgba(118, 75, 162, 0.8)',
+                            borderColor: 'rgba(118, 75, 162, 1)',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Top 10 Highest Risk Stores by Brand',
+                            font: { size: 14 }
+                        },
+                        legend: {
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Risk Score'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateComponentChart() {
+            const ctx = document.getElementById('componentChart').getContext('2d');
+            
+            if (componentChart) {
+                componentChart.destroy();
+            }
+
+            // Get currently selected brand - default to ulta if nothing selected
+            let activeBrand = 'ulta';
+            const activeTab = document.querySelector('.brand-tab.active');
+            if (activeTab) {
+                activeBrand = activeTab.textContent.toLowerCase().trim();
+            }
+            
+            const currentResults = results[activeBrand] || [];
+            
+            console.log(`Updating component chart for ${activeBrand}, ${currentResults.length} stores`);
+
+            // Calculate average component scores for top 10 stores
+            const calculateAvgComponents = (storeList) => {
+                const top10 = storeList.slice(0, 10);
+                if (top10.length === 0) {
+                    console.log('No stores found for component chart');
+                    return { anomaly: 0, yoy: 0, peer: 0 };
+                }
+                
+                const totals = top10.reduce((acc, store) => ({
+                    anomaly: acc.anomaly + (store.anomalyScore || 0),
+                    yoy: acc.yoy + (store.yoyScore || 0),
+                    peer: acc.peer + (store.peerScore || 0)
+                }), { anomaly: 0, yoy: 0, peer: 0 });
+                
+                console.log('Component totals:', totals);
+                
+                return {
+                    anomaly: Math.round((totals.anomaly / top10.length) * 100) / 100,
+                    yoy: Math.round((totals.yoy / top10.length) * 100) / 100,
+                    peer: Math.round((totals.peer / top10.length) * 100) / 100
+                };
+            };
+
+            const components = calculateAvgComponents(currentResults);
+            console.log('Average components:', components);
+
+            // Create chart even if all components are 0 - it will show 0 values
+            const hasData = components.anomaly > 0 || components.yoy > 0 || components.peer > 0;
+            
+            componentChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Anomaly Score', 'YoY Score', 'Peer Score'],
+                    datasets: [
+                        {
+                            label: `${activeBrand.charAt(0).toUpperCase() + activeBrand.slice(1)} Components`,
+                            data: [components.anomaly, components.yoy, components.peer],
+                            backgroundColor: [
+                                'rgba(255, 107, 107, 0.8)',
+                                'rgba(254, 202, 87, 0.8)',
+                                'rgba(72, 219, 251, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 107, 107, 1)',
+                                'rgba(254, 202, 87, 1)',
+                                'rgba(72, 219, 251, 1)'
+                            ],
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: hasData ? 
+                                `${activeBrand.charAt(0).toUpperCase() + activeBrand.slice(1)} Risk Components (Avg Top 10)` :
+                                `${activeBrand.charAt(0).toUpperCase() + activeBrand.slice(1)} - No Risk Data`,
+                            font: { size: 12 }
+                        },
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+            
+            console.log('Component chart created successfully');
+        }
+
+        function updateStats(brand, storeResults) {
+            const statsContainer = document.getElementById(`${brand}Stats`);
+            const totalStores = storeResults.length;
+            const highRisk = storeResults.filter(s => s.totalRiskScore >= 10).length;
+            const mediumRisk = storeResults.filter(s => s.totalRiskScore >= 5 && s.totalRiskScore < 10).length;
+            const avgScore = totalStores > 0 ? storeResults.reduce((sum, s) => sum + s.totalRiskScore, 0) / totalStores : 0;
+
+            statsContainer.innerHTML = `
+                <div class="stat-card">
+                    <div class="stat-value">${totalStores}</div>
+                    <div class="stat-label">Total Stores</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${highRisk}</div>
+                    <div class="stat-label">High Risk (≥10)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${mediumRisk}</div>
+                    <div class="stat-label">Medium Risk (5-10)</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">${avgScore.toFixed(1)}</div>
+                    <div class="stat-label">Avg Risk Score</div>
+                </div>
+            `;
+        }
+
+        function updateStoreList(brand, storeResults) {
+            const listContainer = document.getElementById(`${brand}StoreList`);
+            
+            // Calculate pagination values
+            const { currentPage, itemsPerPage } = paginationState[brand];
+            const totalPages = Math.ceil(storeResults.length / itemsPerPage);
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            
+            // Create table header with sorting
+            let tableHTML = `
+                <div class="store-table-container" style="margin-bottom: 40px;">
+                    <div class="sort-controls">
+                        <span>Sort by: </span>
+                        <button onclick="sortStores('${brand}', 'totalRiskScore')" class="sort-btn">Total Score</button>
+                        <button onclick="sortStores('${brand}', 'anomalyScore')" class="sort-btn">Anomaly</button>
+                        <button onclick="sortStores('${brand}', 'yoyScore')" class="sort-btn">YoY</button>
+                        <button onclick="sortStores('${brand}', 'peerScore')" class="sort-btn">Peer</button>
+                        <button onclick="sortStores('${brand}', 'currentWeekSales')" class="sort-btn" style="display: none;">Sales</button>
+                    </div>
+                    <div class="store-table-header">
+                        <div class="store-header-rank">Rank</div>
+                        <div class="store-header-name">Store</div>
+                        <div class="store-header-scores">Scores (Total | Anomaly | YoY | Peer)</div>
+                        <div class="store-header-sales" style="display: none;">Weekly Sales</div>
+                    </div>
+                    <div class="store-table-body">
+            `;
+            
+            // Get current page of stores
+            const currentStores = storeResults.slice(startIndex, endIndex);
+            currentStores.forEach((store, index) => {
+                const globalIndex = startIndex + index;  // Calculate actual position in full dataset
+                const riskLevel = store.totalRiskScore >= 10 ? 'high-risk' : 
+                                 store.totalRiskScore >= 5 ? 'medium-risk' : 'low-risk';
+                const scoreClass = store.totalRiskScore >= 10 ? 'high' : 
+                                  store.totalRiskScore >= 5 ? 'medium' : 'low';
+
+                tableHTML += `
+                    <div class="store-table-row ${riskLevel}">
+                        <div class="store-rank">#${globalIndex + 1}</div>
+                        <div class="store-info">
+                            <div class="store-name">${store.storeName}</div>
+                            <div class="store-rank-label">(${store.storeRank})</div>
+                        </div>
+                        <div class="store-scores">
+                            <span class="total-score ${scoreClass}">${store.totalRiskScore}</span>
+                            <span class="component-scores">
+                                ${store.anomalyScore} | ${store.yoyScore} | ${store.peerScore}
+                            </span>
+                        </div>
+                        <div class="store-sales" style="display: none;">${store.currentWeekSales.toLocaleString()}</div>
+                    </div>
+                `;
+            });
+            
+            // Close table body and container
+            tableHTML += `
+                    </div>
+                </div>
+            `;
+            
+            // Add pagination controls
+            const paginationTotalPages = Math.ceil(storeResults.length / paginationState[brand].itemsPerPage);
+            tableHTML += createPaginationControls(brand, paginationState[brand].currentPage, paginationTotalPages, storeResults.length);
+            
+            listContainer.innerHTML = tableHTML;
+        }
+
+        // Store sorting and pagination state
+        let sortState = {
+            ulta: { field: 'totalRiskScore', direction: 'desc' },
+            sephora: { field: 'totalRiskScore', direction: 'desc' }
+        };
+
+        let paginationState = {
+            ulta: { currentPage: 1, itemsPerPage: 20 },
+            sephora: { currentPage: 1, itemsPerPage: 20 }
+        };
+
+        function sortStores(brand, field) {
+            // Toggle direction if same field, otherwise default to desc
+            if (sortState[brand].field === field) {
+                sortState[brand].direction = sortState[brand].direction === 'desc' ? 'asc' : 'desc';
+            } else {
+                sortState[brand].field = field;
+                sortState[brand].direction = 'desc';
+            }
+
+            // Reset to first page when sorting
+            paginationState[brand].currentPage = 1;
+
+            // Get sorted results
+            const sortedResults = getCurrentSortedResults(brand);
+
+            // Update the display with sorted results
+            updateStoreList(brand, sortedResults);
+            updateStats(brand, sortedResults);
+            
+            // Update active sort button
+            updateSortButtons(brand, field);
+        }
+
+        function createPaginationControls(brand, currentPage, totalPages, totalItems) {
+            console.log(`Creating pagination for ${brand}: page ${currentPage} of ${totalPages}, ${totalItems} total items`);
+            
+            let paginationHTML = `
+                <div class="pagination-container">
+                    <div class="pagination-controls">
+            `;
+            
+            // Always show pagination info, even for single page
+            if (totalPages === 1) {
+                paginationHTML += `
+                    <span class="page-info">Page 1 of 1</span>
+                `;
+            } else {
+                // Previous button
+                if (currentPage > 1) {
+                    paginationHTML += `
+                        <button onclick="changePage('${brand}', ${currentPage - 1})" class="page-btn">
+                            ← Previous
+                        </button>
+                    `;
+                }
+                
+                // Page numbers (show up to 7 pages)
+                const maxVisiblePages = 7;
+                let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+                let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+                
+                // Adjust start if we're near the end
+                if (endPage - startPage < maxVisiblePages - 1) {
+                    startPage = Math.max(1, endPage - maxVisiblePages + 1);
+                }
+                
+                // First page and ellipsis
+                if (startPage > 1) {
+                    paginationHTML += `
+                        <button onclick="changePage('${brand}', 1)" class="page-btn">1</button>
+                    `;
+                    if (startPage > 2) {
+                        paginationHTML += `<span class="page-ellipsis">...</span>`;
+                    }
+                }
+                
+                // Page numbers
+                for (let i = startPage; i <= endPage; i++) {
+                    const activeClass = i === currentPage ? 'active' : '';
+                    paginationHTML += `
+                        <button onclick="changePage('${brand}', ${i})" class="page-btn ${activeClass}">
+                            ${i}
+                        </button>
+                    `;
+                }
+                
+                // Last page and ellipsis
+                if (endPage < totalPages) {
+                    if (endPage < totalPages - 1) {
+                        paginationHTML += `<span class="page-ellipsis">...</span>`;
+                    }
+                    paginationHTML += `
+                        <button onclick="changePage('${brand}', ${totalPages})" class="page-btn">${totalPages}</button>
+                    `;
+                }
+                
+                // Next button
+                if (currentPage < totalPages) {
+                    paginationHTML += `
+                        <button onclick="changePage('${brand}', ${currentPage + 1})" class="page-btn">
+                            Next →
+                        </button>
+                    `;
+                }
+            }
+            
+            paginationHTML += `
+                    </div>
+                    <div class="page-size-controls">
+                        <label>Items per page:</label>
+                        <select onchange="changePageSize('${brand}', this.value)" class="page-size-select">
+                            <option value="10" ${paginationState[brand].itemsPerPage === 10 ? 'selected' : ''}>10</option>
+                            <option value="20" ${paginationState[brand].itemsPerPage === 20 ? 'selected' : ''}>20</option>
+                            <option value="50" ${paginationState[brand].itemsPerPage === 50 ? 'selected' : ''}>50</option>
+                            <option value="100" ${paginationState[brand].itemsPerPage === 100 ? 'selected' : ''}>100</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+            
+            console.log('Pagination HTML created:', paginationHTML.substring(0, 200) + '...');
+            return paginationHTML;
+        }
+
+        function changePage(brand, newPage) {
+            paginationState[brand].currentPage = newPage;
+            
+            // Get current sorted results
+            const currentResults = getCurrentSortedResults(brand);
+            updateStoreList(brand, currentResults);
+            updateSortButtons(brand, sortState[brand].field);
+        }
+
+        function changePageSize(brand, newSize) {
+            paginationState[brand].itemsPerPage = parseInt(newSize);
+            paginationState[brand].currentPage = 1; // Reset to first page
+            
+            // Get current sorted results
+            const currentResults = getCurrentSortedResults(brand);
+            updateStoreList(brand, currentResults);
+            updateSortButtons(brand, sortState[brand].field);
+        }
+
+        function getCurrentSortedResults(brand) {
+            const field = sortState[brand].field;
+            const direction = sortState[brand].direction;
+            
+            return [...results[brand]].sort((a, b) => {
+                const aVal = a[field];
+                const bVal = b[field];
+                
+                if (direction === 'desc') {
+                    return bVal - aVal;
+                } else {
+                    return aVal - bVal;
+                }
+            });
+        }
+
+        function updateSortButtons(brand, activeField) {
+            const container = document.getElementById(`${brand}StoreList`);
+            const buttons = container.querySelectorAll('.sort-btn');
+            
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                btn.textContent = btn.textContent.replace(/[↓↑]/, '').trim();
+                
+                // Check if this button matches the active field
+                const btnText = btn.textContent.toLowerCase();
+                const fieldText = activeField.toLowerCase().replace('score', '').trim();
+                
+                if ((btnText.includes('total') && fieldText.includes('totalrisk')) ||
+                    (btnText.includes('anomaly') && fieldText.includes('anomaly')) ||
+                    (btnText.includes('yoy') && fieldText.includes('yoy')) ||
+                    (btnText.includes('peer') && fieldText.includes('peer'))) {
+                    btn.classList.add('active');
+                    const direction = sortState[brand].direction === 'desc' ? '↓' : '↑';
+                    btn.textContent = btn.textContent + ' ' + direction;
+                }
+            });
+        }
+
+        function switchBrand(brand) {
+            // Update tab styles
+            document.querySelectorAll('.brand-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Show/hide results
+            document.getElementById('ultaResults').style.display = brand === 'ulta' ? 'block' : 'none';
+            document.getElementById('sephoraResults').style.display = brand === 'sephora' ? 'block' : 'none';
+            
+            // Update component chart for the selected brand
+            updateComponentChart();
+        }
+
+        function displayResults() {
+            console.log('Displaying results...');
+            console.log('Ulta results:', results.ulta.length, results.ulta.slice(0, 3));
+            console.log('Sephora results:', results.sephora.length, results.sephora.slice(0, 3));
+            
+            document.getElementById('resultsContainer').style.display = 'block';
+            
+            // Reset pagination state
+            paginationState.ulta.currentPage = 1;
+            paginationState.sephora.currentPage = 1;
+            
+            // Update both charts
+            updateChart();
+            
+            // Update stats and store lists (results are already sorted by total score desc)
+            updateStats('ulta', results.ulta);
+            updateStats('sephora', results.sephora);
+            updateStoreList('ulta', results.ulta);
+            updateStoreList('sephora', results.sephora);
+            
+            // Set initial sort button states
+            updateSortButtons('ulta', 'totalRiskScore');
+            updateSortButtons('sephora', 'totalRiskScore');
+            
+            console.log('Charts and results updated successfully');
+        }
+    </script>
+</body>
+</html>
