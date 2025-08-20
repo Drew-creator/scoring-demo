@@ -132,7 +132,7 @@
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
-            color: #5e93db; /* dermblue */
+            color: #F9FAFB; /* darkWhite */
         }
 
         .dashboard {
@@ -672,7 +672,7 @@
 
         .store-table-header {
             display: grid;
-            grid-template-columns: 60px 1fr 200px;
+            grid-template-columns: 60px 1fr 240px; /* Increased width for scores column */
             gap: 15px;
             padding: 12px;
             background: #5e93db; /* dermblue */
@@ -762,6 +762,74 @@
         .component-scores {
             font-size: 0.8rem;
             color: #5B6670; /* darkGrey */
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 1001; /* Above password wall */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6); /* Semi-transparent black background */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 600px;
+            position: relative;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: #5e93db; /* dermblue */
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal-content h3 {
+            color: #5e93db; /* dermblue */
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+
+        .modal-detail-item {
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            color: #333;
+        }
+
+        .modal-detail-item strong {
+            color: #5B6670; /* darkGrey */
+            min-width: 150px;
+            display: inline-block;
         }
     </style>
 </head>
@@ -912,6 +980,16 @@
         </div>
     </div>
 
+    <div id="storeDetailsModal" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeModal()">&times;</span>
+            <h3 id="modalStoreName"></h3>
+            <div id="modalStoreDetails">
+                <!-- Details will be injected here -->
+            </div>
+        </div>
+    </div>
+
     <script>
         const CORRECT_PASSWORD = "Digital789!";
         
@@ -947,8 +1025,8 @@
 
         // File URLs - relative paths in the same GitHub repo
         const FILE_URLS = {
-            ultaWeekly: './8-19-2025_Ulta_Sales.csv',
-            sephoraWeekly: './8-19-2025_Sephora_Sales.csv',
+            ultaWeekly: './8-19-2025_Ulta_Sales.xlsx',
+            sephoraWeekly: './8-19-2025_Sephora_Sales.xlsx',
             ultaHistorical: './2024-08-18_Ulta_Sales.csv',
             sephoraHistorical: './2024-08-18_Sephora_Sales.csv',
             ultaThresholds: './ulta_thresholds.xlsx',
@@ -1064,8 +1142,10 @@
                 updateFileStatus('mappings', 'loading');
 
                 // Load current sales data
-                data.ultaWeekly = await loadFileFromURL(FILE_URLS.ultaWeekly);
-                data.sephoraWeekly = await loadFileFromURL(FILE_URLS.sephoraWeekly);
+                const ultaWeeklyRaw = await loadFileFromURL(FILE_URLS.ultaWeekly);
+                data.ultaWeekly = ultaWeeklyRaw[Object.keys(ultaWeeklyRaw)[0]]; // Extract data from the first sheet
+                const sephoraWeeklyRaw = await loadFileFromURL(FILE_URLS.sephoraWeekly);
+                data.sephoraWeekly = sephoraWeeklyRaw[Object.keys(sephoraWeeklyRaw)[0]]; // Extract data from the first sheet
                 updateFileStatus('currentSales', 'success');
 
                 // Load historical data
@@ -1888,7 +1968,7 @@
                     <div class="store-table-header">
                         <div class="store-header-rank">Rank</div>
                         <div class="store-header-name">Store</div>
-                        <div class="store-header-scores">Scores (Total | Anomaly | YoY | Peer)</div>
+                        <div class="store-header-scores">Scores (Total | Anomaly | YoY Comp Door | Peer)</div>
                         <div class="store-header-sales" style="display: none;">Weekly Sales</div>
                     </div>
                     <div class="store-table-body">
@@ -1904,7 +1984,7 @@
                                   store.totalRiskScore >= 5 ? 'medium' : 'low';
 
                 tableHTML += `
-                    <div class="store-table-row ${riskLevel}">
+                    <div class="store-table-row ${riskLevel}" onclick='showStoreDetails(${JSON.stringify(store)})'>
                         <div class="store-rank">#${globalIndex + 1}</div>
                         <div class="store-info">
                             <div class="store-name">${store.storeName}</div>
@@ -2155,6 +2235,38 @@
             updateSortButtons('sephora', 'totalRiskScore');
             
             console.log('Charts and results updated successfully');
+        }
+
+        // Modal functions
+        function showStoreDetails(store) {
+            const modal = document.getElementById('storeDetailsModal');
+            const modalStoreName = document.getElementById('modalStoreName');
+            const modalStoreDetails = document.getElementById('modalStoreDetails');
+
+            modalStoreName.textContent = `${store.storeName} (Rank: ${store.storeRank})`;
+            modalStoreDetails.innerHTML = `
+                <div class="modal-detail-item"><strong>Total Risk Score:</strong> ${store.totalRiskScore}</div>
+                <div class="modal-detail-item"><strong>Anomaly Score:</strong> ${store.anomalyScore}</div>
+                <div class="modal-detail-item"><strong>YoY Score:</strong> ${store.yoyScore}</div>
+                <div class="modal-detail-item"><strong>Peer Score:</strong> ${store.peerScore}</div>
+                <div class="modal-detail-item"><strong>Current Week Sales:</strong> $${store.currentWeekSales.toLocaleString()}</div>
+                <div class="modal-detail-item"><strong>Historical Sales:</strong> $${store.historicalSales.toLocaleString()}</div>
+                <div class="modal-detail-item"><strong>Store YoY Performance:</strong> ${store.storeYoyPerformance}%</div>
+                <div class="modal-detail-item"><strong>Rank Peer YoY Average:</strong> ${store.rankPeerYoyAverage}%</div>
+            `;
+            modal.style.display = 'flex'; // Use flex to center content
+        }
+
+        function closeModal() {
+            document.getElementById('storeDetailsModal').style.display = 'none';
+        }
+
+        // Close modal if user clicks outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('storeDetailsModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
         }
     </script>
 </body>
