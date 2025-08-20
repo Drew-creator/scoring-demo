@@ -21,6 +21,96 @@
             color: #333;
         }
 
+        /* Password Wall Styles */
+        #password-wall {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #5B6670; /* Using darkGrey as primary background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            color: #F9FAFB; /* darkWhite for text */
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        #password-wall h2 {
+            color: #F9FAFB; /* darkWhite */
+            margin-bottom: 20px;
+            font-size: 2.2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        #password-form {
+            background: #F9FAFB; /* darkWhite */
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        #password-form label {
+            color: #F9FAFB; /* darkWhite */
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        #password-input {
+            padding: 12px 15px;
+            border: 2px solid #5e93db; /* dermblue */
+            border-radius: 8px;
+            font-size: 1.1rem;
+            width: 100%;
+            margin-bottom: 20px;
+            background: #F9FAFB; /* darkWhite */
+            color: #5e93db; /* dermblue for input text */
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        #password-input:focus {
+            outline: none;
+            border-color: #73818c; /* greyHover */
+            box-shadow: 0 0 10px rgba(94, 147, 219, 0.5);
+        }
+
+        #password-submit {
+            background: #5e93db; /* dermblue */
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        #password-submit:hover {
+            background: #4a78b5; /* A darker shade of dermblue for hover */
+            transform: translateY(-2px);
+        }
+
+        #password-message {
+            color: #c62828; /* Error red for better visibility */
+            margin-top: 15px;
+            font-size: 1rem;
+            text-align: center;
+            min-height: 20px; /* Reserve space to prevent layout shift */
+        }
+
+        .dashboard-container {
+            display: none; /* Hidden by default */
+        }
+
         .container {
             max-width: 1400px;
             margin: 0 auto;
@@ -42,6 +132,7 @@
         .header p {
             font-size: 1.1rem;
             opacity: 0.9;
+            color: #5e93db; /* dermblue */
         }
 
         .dashboard {
@@ -73,11 +164,11 @@
             padding: 20px;
             background: #f8f9fa;
             border-radius: 10px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #5e93db; /* dermblue */
         }
 
         .section h3 {
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             margin-bottom: 15px;
             font-size: 1.2rem;
         }
@@ -135,7 +226,7 @@
         .parameter-control label {
             font-weight: 600;
             margin-bottom: 5px;
-            color: #555;
+            color: #5e93db; /* dermblue */
             font-size: 0.9rem;
         }
 
@@ -148,13 +239,13 @@
 
         .parameter-control input:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: #5e93db; /* dermblue */
         }
 
         .analyze-btn {
             width: 100%;
             padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #5e93db; /* dermblue */
             color: white;
             border: none;
             border-radius: 10px;
@@ -166,6 +257,7 @@
         }
 
         .analyze-btn:hover {
+            background: #4a78b5; /* A darker shade of dermblue for hover */
             transform: translateY(-2px);
         }
 
@@ -183,7 +275,7 @@
 
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border-top: 4px solid #5e93db; /* dermblue */
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -197,7 +289,7 @@
         }
 
         .loading-text {
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             font-weight: 600;
             font-size: 1.1rem;
         }
@@ -231,7 +323,7 @@
 
         .info {
             background: #e3f2fd;
-            color: #1976d2;
+            color: #5e93db; /* dermblue */
             padding: 15px;
             border-radius: 8px;
             border-left: 4px solid #1976d2;
@@ -251,18 +343,18 @@
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            color: #666;
+            color: #5B6670; /* darkGrey */
             border-bottom: 3px solid transparent;
             transition: all 0.3s ease;
         }
 
         .brand-tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
+            color: #5e93db; /* dermblue */
+            border-bottom-color: #5e93db; /* dermblue */
         }
 
         .brand-tab:hover {
-            color: #667eea;
+            color: #5e93db; /* dermblue */
         }
 
         .stats-grid {
@@ -277,18 +369,18 @@
             padding: 20px;
             border-radius: 10px;
             text-align: center;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #5e93db; /* dermblue */
         }
 
         .stat-value {
             font-size: 2rem;
             font-weight: bold;
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             margin-bottom: 5px;
         }
 
         .stat-label {
-            color: #666;
+            color: #5B6670; /* darkGrey */
             font-size: 0.9rem;
         }
 
@@ -300,7 +392,7 @@
 
         .top-stores h3 {
             margin-bottom: 15px;
-            color: #667eea;
+            color: #5e93db; /* dermblue */
         }
 
         .chart-container {
@@ -341,28 +433,29 @@
 
         .pagination-info {
             margin: 0 15px;
-            color: #666;
+            color: #5B6670; /* darkGrey */
             font-size: 0.9rem;
         }
 
         .pagination-button {
             padding: 8px 16px;
             background: white;
-            border: 1px solid #667eea;
+            border: 1px solid #5e93db; /* dermblue */
             border-radius: 4px;
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
         .pagination-button:hover:not(:disabled) {
-            background: #667eea;
+            background: #5e93db; /* dermblue */
             color: white;
         }
 
         .pagination-button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none;
         }
 
         .sort-controls {
@@ -374,7 +467,7 @@
 
         .results-info {
             font-size: 0.9rem;
-            color: #666;
+            color: #5B6670; /* darkGrey */
             font-weight: 500;
         }
 
@@ -390,13 +483,13 @@
 
         .sort-btn:hover {
             background: #e9ecef;
-            border-color: #667eea;
+            border-color: #5e93db; /* dermblue */
         }
 
         .sort-btn.active {
-            background: #667eea;
+            background: #5e93db; /* dermblue */
             color: white;
-            border-color: #667eea;
+            border-color: #5e93db; /* dermblue */
         }
 
         .pagination-container {
@@ -422,25 +515,26 @@
         .page-btn {
             padding: 8px 12px;
             background: white;
-            border: 1px solid #667eea;
+            border: 1px solid #5e93db; /* dermblue */
             border-radius: 4px;
             cursor: pointer;
             font-size: 0.9rem;
             font-weight: 500;
             transition: all 0.2s ease;
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             min-width: 40px;
             text-align: center;
         }
 
         .page-btn:hover {
-            background: #667eea;
+            background: #5e93db; /* dermblue */
             color: white;
         }
 
         .page-btn.active {
-            background: #667eea;
+            background: #5e93db; /* dermblue */
             color: white;
+            box-shadow: 0 4px 12px rgba(94, 147, 219, 0.3); /* dermblue shadow */
         }
 
         .page-btn:disabled {
@@ -450,7 +544,7 @@
         }
 
         .page-ellipsis {
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             padding: 0 4px;
         }
 
@@ -462,35 +556,36 @@
 
         .page-size-select {
             padding: 6px 10px;
-            border: 1px solid #667eea;
+            border: 1px solid #5e93db; /* dermblue */
             border-radius: 4px;
             font-size: 0.9rem;
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             background: white;
             cursor: pointer;
         }
 
         .page-size-select:focus {
             outline: none;
-            border-color: #764ba2;
+            border-color: #4a78b5; /* darker dermblue */
+            box-shadow: 0 0 8px rgba(94, 147, 219, 0.3); /* dermblue shadow */
         }
 
         .pagination-info {
             font-size: 0.9rem;
-            color: #666;
+            color: #5B6670; /* darkGrey */
             margin-right: 15px;
         }
 
         .page-btn:hover {
-            background: #667eea;
+            background: #5e93db; /* dermblue */
             color: white;
             transform: translateY(-1px);
         }
 
         .page-btn.active {
-            background: #667eea;
+            background: #5e93db; /* dermblue */
             color: white;
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 12px rgba(94, 147, 219, 0.3); /* dermblue shadow */
         }
 
         .page-btn:disabled {
@@ -503,16 +598,16 @@
         .page-info {
             padding: 10px 15px;
             background: white;
-            border: 2px solid #667eea;
+            border: 2px solid #5e93db; /* dermblue */
+            color: #5e93db; /* dermblue */
             border-radius: 8px;
-            color: #667eea;
             font-weight: 600;
             font-size: 0.9rem;
         }
 
         .page-ellipsis {
             padding: 10px 6px;
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             font-size: 0.9rem;
             font-weight: 600;
         }
@@ -524,30 +619,30 @@
             background: white;
             padding: 8px 15px;
             border-radius: 8px;
-            border: 2px solid #667eea;
+            border: 2px solid #5e93db; /* dermblue */
         }
 
         .page-size-controls label {
             font-size: 0.9rem;
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             font-weight: 600;
         }
 
         .page-size-select {
             padding: 8px 12px;
-            border: 2px solid #667eea;
+            border: 2px solid #5e93db; /* dermblue */
             border-radius: 6px;
             background: white;
             font-size: 0.9rem;
             cursor: pointer;
-            color: #667eea;
+            color: #5e93db; /* dermblue */
             font-weight: 600;
         }
 
         .page-size-select:focus {
             outline: none;
-            border-color: #764ba2;
-            box-shadow: 0 0 8px rgba(102, 126, 234, 0.3);
+            border-color: #4a78b5; /* darker dermblue */
+            box-shadow: 0 0 8px rgba(94, 147, 219, 0.3); /* dermblue shadow */
         }
 
         @media (max-width: 768px) {
@@ -580,7 +675,7 @@
             grid-template-columns: 60px 1fr 200px;
             gap: 15px;
             padding: 12px;
-            background: #667eea;
+            background: #5e93db; /* dermblue */
             color: white;
             border-radius: 8px;
             font-weight: 600;
@@ -615,12 +710,12 @@
         }
 
         .store-table-row.low-risk {
-            border-left-color: #48dbfb;
+            border-left-color: #5e93db; /* dermblue */
         }
 
         .store-rank {
             font-weight: bold;
-            color: #667eea;
+            color: #5e93db; /* dermblue */
         }
 
         .store-info {
@@ -635,7 +730,7 @@
 
         .store-rank-label {
             font-size: 0.8rem;
-            color: #666;
+            color: #5B6670; /* darkGrey */
         }
 
         .store-scores {
@@ -661,160 +756,201 @@
         }
 
         .total-score.low {
-            background: #48dbfb;
+            background: #5e93db; /* dermblue */
         }
 
         .component-scores {
             font-size: 0.8rem;
-            color: #666;
+            color: #5B6670; /* darkGrey */
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Store Risk Scoring Dashboard</h1>
-            <p>Automated analysis using the latest sales data and performance metrics</p>
-        </div>
+    <div id="password-wall">
+        <form id="password-form" onsubmit="return checkPassword(event)">
+            <label for="password-input" style="color: #5e93db;">Enter Password:</label>
+            <input type="password" id="password-input" required autofocus>
+            <button type="submit" id="password-submit">Enter</button>
+            <div id="password-message"></div>
+        </form>
+    </div>
 
-        <div class="dashboard">
-            <div class="control-panel">
-                <div class="section">
-                    <h3>📁 Data Files</h3>
-                    <div id="fileStatus">
-                        <div class="file-status-item">
-                            <span>📊 Current Sales Data (8-11-2025)</span>
-                            <span id="currentSalesStatus" class="status-indicator ready">⏳ Ready to load</span>
+    <div class="dashboard-container" id="dashboardContainer">
+        <div class="container">
+            <div class="header">
+                <h1>Store Risk Scoring Dashboard</h1>
+                <p>Automated analysis using the latest sales data and performance metrics</p>
+            </div>
+
+            <div class="dashboard">
+                <div class="control-panel">
+                    <div class="section">
+                        <h3>📁 Data Files</h3>
+                        <div id="fileStatus">
+                            <div class="file-status-item">
+                                <span>📊 Current Sales Data (8-11-2025)</span>
+                                <span id="currentSalesStatus" class="status-indicator ready">⏳ Ready to load</span>
+                            </div>
+                            <div class="file-status-item">
+                                <span>📈 Historical Sales Data (2024-08-04)</span>
+                                <span id="historicalSalesStatus" class="status-indicator ready">⏳ Ready to load</span>
+                            </div>
+                            <div class="file-status-item">
+                                <span>🎯 Threshold Files</span>
+                                <span id="thresholdsStatus" class="status-indicator ready">⏳ Ready to load</span>
+                            </div>
+                            <div class="file-status-item">
+                                <span>🏷️ Category & Store Mappings</span>
+                                <span id="mappingsStatus" class="status-indicator ready">⏳ Ready to load</span>
+                            </div>
                         </div>
-                        <div class="file-status-item">
-                            <span>📈 Historical Sales Data (2024-08-04)</span>
-                            <span id="historicalSalesStatus" class="status-indicator ready">⏳ Ready to load</span>
+                    </div>
+
+                    <div class="section">
+                        <h3>⚙️ Anomaly Weights</h3>
+                        <div class="parameter-group">
+                            <div class="parameter-control">
+                                <label>Core UB Weight</label>
+                                <input type="number" id="coreUb" value="2" step="0.1">
+                            </div>
+                            <div class="parameter-control">
+                                <label>Core LB Weight</label>
+                                <input type="number" id="coreLb" value="3" step="0.1">
+                            </div>
+                            <div class="parameter-control">
+                                <label>Innovation UB Weight</label>
+                                <input type="number" id="innovationUb" value="1" step="0.1">
+                            </div>
+                            <div class="parameter-control">
+                                <label>Innovation LB Weight</label>
+                                <input type="number" id="innovationLb" value="2" step="0.1">
+                            </div>
+                            <div class="parameter-control">
+                                <label>Other UB Weight</label>
+                                <input type="number" id="otherUb" value="0.2" step="0.1">
+                            </div>
+                            <div class="parameter-control">
+                                <label>Other LB Weight</label>
+                                <input type="number" id="otherLb" value="0.5" step="0.1">
+                            </div>
                         </div>
-                        <div class="file-status-item">
-                            <span>🎯 Threshold Files</span>
-                            <span id="thresholdsStatus" class="status-indicator ready">⏳ Ready to load</span>
+                    </div>
+
+                    <div class="section">
+                        <h3>📊 Performance Parameters</h3>
+                        <div class="parameter-group">
+                            <div class="parameter-control">
+                                <label>Cross Category Bonus</label>
+                                <input type="number" id="crossCategoryBonus" value="5" step="1">
+                            </div>
+                            <div class="parameter-control">
+                                <label>YOY Weight</label>
+                                <input type="number" id="yoyWeight" value="2" step="0.1">
+                            </div>
+                            <div class="parameter-control">
+                                <label>Peer Weight</label>
+                                <input type="number" id="peerWeight" value="3" step="0.1">
+                            </div>
+                            <div class="parameter-control">
+                                <label>YOY Threshold</label>
+                                <input type="number" id="yoyThreshold" value="-0.05" step="0.01">
+                            </div>
+                            <div class="parameter-control">
+                                <label>Peer Threshold</label>
+                                <input type="number" id="peerThreshold" value="-0.10" step="0.01">
+                            </div>
+                            <div class="parameter-control">
+                                <label>Min Mean Alert</label>
+                                <input type="number" id="minMeanAlert" value="1" step="1">
+                            </div>
                         </div>
-                        <div class="file-status-item">
-                            <span>🏷️ Category & Store Mappings</span>
-                            <span id="mappingsStatus" class="status-indicator ready">⏳ Ready to load</span>
-                        </div>
+                    </div>
+                    <button class="analyze-btn" onclick="runAnalysis()" style="margin-top: 10px;">
+                        🔍 Calculate Scores for each Door
+                    </button>
+
+                    <div class="loading-spinner" id="mainLoadingSpinner">
+                        <div class="spinner"></div>
+                        <div class="loading-text" id="loadingText">Running analysis...</div>
+                    </div>
+
+                    <div id="status"></div>
+                </div>
+
+                <div class="visualization-panel">
+                    <div class="chart-container">
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                    <div class="component-chart-container">
+                        <canvas id="componentChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="results-container" id="resultsContainer">
+                <div class="brand-tabs">
+                    <button class="brand-tab active" onclick="switchBrand('ulta')">Ulta</button>
+                    <button class="brand-tab" onclick="switchBrand('sephora')">Sephora</button>
+                </div>
+
+                <div id="ultaResults" class="brand-results">
+                    <div class="stats-grid" id="ultaStats"></div>
+                    <div class="top-stores">
+                        <h3>Top Risk Stores - Ulta</h3>
+                        <div id="ultaStoreList"></div>
                     </div>
                 </div>
 
-                <div class="section">
-                    <h3>⚙️ Anomaly Weights</h3>
-                    <div class="parameter-group">
-                        <div class="parameter-control">
-                            <label>Core UB Weight</label>
-                            <input type="number" id="coreUb" value="2" step="0.1">
-                        </div>
-                        <div class="parameter-control">
-                            <label>Core LB Weight</label>
-                            <input type="number" id="coreLb" value="3" step="0.1">
-                        </div>
-                        <div class="parameter-control">
-                            <label>Innovation UB Weight</label>
-                            <input type="number" id="innovationUb" value="1" step="0.1">
-                        </div>
-                        <div class="parameter-control">
-                            <label>Innovation LB Weight</label>
-                            <input type="number" id="innovationLb" value="2" step="0.1">
-                        </div>
-                        <div class="parameter-control">
-                            <label>Other UB Weight</label>
-                            <input type="number" id="otherUb" value="0.2" step="0.1">
-                        </div>
-                        <div class="parameter-control">
-                            <label>Other LB Weight</label>
-                            <input type="number" id="otherLb" value="0.5" step="0.1">
-                        </div>
+                <div id="sephoraResults" class="brand-results" style="display: none;">
+                    <div class="stats-grid" id="sephoraStats"></div>
+                    <div class="top-stores">
+                        <h3>Top Risk Stores - Sephora</h3>
+                        <div id="sephoraStoreList"></div>
                     </div>
-                </div>
-
-                <div class="section">
-                    <h3>📊 Performance Parameters</h3>
-                    <div class="parameter-group">
-                        <div class="parameter-control">
-                            <label>Cross Category Bonus</label>
-                            <input type="number" id="crossCategoryBonus" value="5" step="1">
-                        </div>
-                        <div class="parameter-control">
-                            <label>YOY Weight</label>
-                            <input type="number" id="yoyWeight" value="2" step="0.1">
-                        </div>
-                        <div class="parameter-control">
-                            <label>Peer Weight</label>
-                            <input type="number" id="peerWeight" value="3" step="0.1">
-                        </div>
-                        <div class="parameter-control">
-                            <label>YOY Threshold</label>
-                            <input type="number" id="yoyThreshold" value="-0.05" step="0.01">
-                        </div>
-                        <div class="parameter-control">
-                            <label>Peer Threshold</label>
-                            <input type="number" id="peerThreshold" value="-0.10" step="0.01">
-                        </div>
-                        <div class="parameter-control">
-                            <label>Min Mean Alert</label>
-                            <input type="number" id="minMeanAlert" value="1" step="1">
-                        </div>
-                    </div>
-                </div>
-                <button class="analyze-btn" onclick="runAnalysis()" style="margin-top: 10px;">
-                    🔍 Calculate Scores for each Door
-                </button>
-
-                <div class="loading-spinner" id="mainLoadingSpinner">
-                    <div class="spinner"></div>
-                    <div class="loading-text" id="loadingText">Running analysis...</div>
-                </div>
-
-                <div id="status"></div>
-            </div>
-
-            <div class="visualization-panel">
-                <div class="chart-container">
-                    <canvas id="riskChart"></canvas>
-                </div>
-                <div class="component-chart-container">
-                    <canvas id="componentChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <div class="results-container" id="resultsContainer">
-            <div class="brand-tabs">
-                <button class="brand-tab active" onclick="switchBrand('ulta')">Ulta</button>
-                <button class="brand-tab" onclick="switchBrand('sephora')">Sephora</button>
-            </div>
-
-            <div id="ultaResults" class="brand-results">
-                <div class="stats-grid" id="ultaStats"></div>
-                <div class="top-stores">
-                    <h3>Top Risk Stores - Ulta</h3>
-                    <div id="ultaStoreList"></div>
-                </div>
-            </div>
-
-            <div id="sephoraResults" class="brand-results" style="display: none;">
-                <div class="stats-grid" id="sephoraStats"></div>
-                <div class="top-stores">
-                    <h3>Top Risk Stores - Sephora</h3>
-                    <div id="sephoraStoreList"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        const CORRECT_PASSWORD = "Digital789!";
+        
+        function checkPassword(event) {
+            event.preventDefault(); // Prevent form submission
+            const passwordInput = document.getElementById('password-input');
+            const passwordMessage = document.getElementById('password-message');
+            const passwordWall = document.getElementById('password-wall');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+            
+            if (passwordInput.value === CORRECT_PASSWORD) {
+                passwordWall.style.display = 'none';
+                dashboardContainer.style.display = 'block';
+                passwordMessage.textContent = ''; // Clear any previous messages
+                // Initialize empty component chart when dashboard is shown
+                initializeEmptyComponentChart();
+            } else {
+                passwordMessage.textContent = 'Incorrect password. Please try again.';
+                passwordInput.value = ''; // Clear input
+                passwordInput.focus(); // Focus for re-entry
+            }
+            return false; // Prevent actual form submission
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // No longer initialize empty chart here, it will be done after password entry
+            // initializeEmptyComponentChart(); 
+            console.log('🎯 DOM loaded!');
+            showStatus('Ready to load files and run analysis!', 'info');
+        });
+
         console.log('🚀 Script starting...');
 
         // File URLs - relative paths in the same GitHub repo
         const FILE_URLS = {
-            ultaWeekly: './8-11-2025_Ulta_Sales.csv',
-            sephoraWeekly: './8-11-2025_Sephora_Sales.csv',
-            ultaHistorical: './2024-08-04_Ulta_Sales.csv',
-            sephoraHistorical: './2024-08-04_Sephora_Sales.csv',
+            ultaWeekly: './8-19-2025_Ulta_Sales.csv',
+            sephoraWeekly: './8-19-2025_Sephora_Sales.csv',
+            ultaHistorical: './2024-08-18_Ulta_Sales.csv',
+            sephoraHistorical: './2024-08-18_Sephora_Sales.csv',
             ultaThresholds: './ulta_thresholds.xlsx',
             sephoraThresholds: './sephora_thresholds.xlsx',
             categoryMapping: './SKU_category_mapping.xlsx',
@@ -1102,8 +1238,6 @@
                 sku = sku.replace(/^\{\s*"\s*"\s*:\s*"?/, '');
                 sku = sku.replace(/\}$/, '');
                 // Split on a tab or ≥2 spaces, keep just the first piece
-                sku = sku.split(/\t| {2,}/)[0];
-                // Drop any leading stray quote
                 sku = sku.replace(/^"/, '').replace(/"$/, '');
             }
 
@@ -1570,15 +1704,15 @@
                         {
                             label: 'Ulta Risk Scores',
                             data: ultaScores,
-                            backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                            borderColor: 'rgba(102, 126, 234, 1)',
+                            backgroundColor: 'rgba(94, 147, 219, 0.8)', /* dermblue */
+                            borderColor: 'rgba(94, 147, 219, 1)', /* dermblue */
                             borderWidth: 2
                         },
                         {
                             label: 'Sephora Risk Scores',
                             data: sephoraScores,
-                            backgroundColor: 'rgba(118, 75, 162, 0.8)',
-                            borderColor: 'rgba(118, 75, 162, 1)',
+                            backgroundColor: 'rgba(94, 147, 219, 0.6)', /* slightly lighter dermblue */
+                            borderColor: 'rgba(94, 147, 219, 0.8)', /* slightly lighter dermblue */
                             borderWidth: 2
                         }
                     ]
@@ -1601,7 +1735,8 @@
                             beginAtZero: true,
                             title: {
                                 display: true,
-                                text: 'Risk Score'
+                                text: 'Risk Score',
+                                color: '#5e93db' /* dermblue */
                             }
                         }
                     }
@@ -1667,12 +1802,12 @@
                             backgroundColor: [
                                 'rgba(255, 107, 107, 0.8)',
                                 'rgba(254, 202, 87, 0.8)',
-                                'rgba(72, 219, 251, 0.8)'
+                                'rgba(94, 147, 219, 0.8)' /* dermblue */
                             ],
                             borderColor: [
                                 'rgba(255, 107, 107, 1)',
                                 'rgba(254, 202, 87, 1)',
-                                'rgba(72, 219, 251, 1)'
+                                'rgba(94, 147, 219, 1)' /* dermblue */
                             ],
                             borderWidth: 2
                         }
@@ -1692,7 +1827,8 @@
                         legend: {
                             position: 'bottom',
                             labels: {
-                                font: { size: 10 }
+                                font: { size: 10 },
+                                color: '#5B6670' /* darkGrey */
                             }
                         }
                     }
