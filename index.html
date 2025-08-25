@@ -672,7 +672,7 @@
 
         .store-table-header {
             display: grid;
-            grid-template-columns: 60px 1fr 240px; /* Increased width for scores column */
+            grid-template-columns: 60px 1fr 100px 100px 100px 100px 120px 120px; /* Adjusted columns for individual scores */
             gap: 15px;
             padding: 12px;
             background: #5e93db; /* dermblue */
@@ -685,7 +685,7 @@
 
         .store-table-row {
             display: grid;
-            grid-template-columns: 60px 1fr 200px;
+            grid-template-columns: 60px 1fr 100px 100px 100px 100px 120px 120px; /* Adjusted columns for individual scores */
             gap: 15px;
             padding: 12px;
             background: white;
@@ -830,6 +830,18 @@
             color: #5B6670; /* darkGrey */
             min-width: 150px;
             display: inline-block;
+        }
+
+        /* New style for individual score items */
+        .store-score-item {
+            font-size: 0.9rem;
+            text-align: center;
+            padding: 5px 0;
+        }
+
+        /* Style for individual score headers */
+        .store-header-score {
+            text-align: center;
         }
     </style>
 </head>
@@ -1015,8 +1027,6 @@
         }
         
         document.addEventListener('DOMContentLoaded', function() {
-            // No longer initialize empty chart here, it will be done after password entry
-            // initializeEmptyComponentChart(); 
             console.log('🎯 DOM loaded!');
             showStatus('Ready to load files and run analysis!', 'info');
         });
@@ -1032,7 +1042,8 @@
             ultaThresholds: './ulta_thresholds.xlsx',
             sephoraThresholds: './sephora_thresholds.xlsx',
             categoryMapping: './SKU_category_mapping.xlsx',
-            storeCategories: './store_categories.xlsx'
+            storeCategories: './store_categories.xlsx',
+            sephoraProductivityRanks: './Q1 2025 Productivity - Dermalogica.xlsx' // New file for Sephora productivity ranks
         };
 
         // Global configuration - matches Python exactly
@@ -1059,7 +1070,8 @@
             categoryMapping: null,
             storeCategories: null,
             ultaHistorical: null,
-            sephoraHistorical: null
+            sephoraHistorical: null,
+            sephoraProductivityRanks: null // New data storage for Sephora productivity ranks
         };
 
         let results = {
@@ -1164,6 +1176,9 @@
                 data.categoryMapping = await loadFileFromURL(FILE_URLS.categoryMapping);
                 data.storeCategories = await loadFileFromURL(FILE_URLS.storeCategories);
                 updateFileStatus('mappings', 'success');
+
+                // Load Sephora productivity ranks
+                data.sephoraProductivityRanks = await loadSephoraProductivityRanks(FILE_URLS.sephoraProductivityRanks);
 
                 console.log('All files loaded successfully!');
                 showStatus('All files loaded successfully! Analysis complete.', 'success');
@@ -1460,8 +1475,10 @@
             
             if (data.storeCategories.Sephora) {
                 data.storeCategories.Sephora.forEach(row => {
-                    if (row.Store && row['Store Rank']) {
-                        sephoraRanks[String(row.Store).padStart(4, '0')] = row['Store Rank'];
+                    // Ensure store number is parsed as a string for consistent key lookup
+                    const storeNo = String(row.Store).padStart(4, '0');
+                    if (storeNo && row['Store Rank']) {
+                        sephoraRanks[storeNo] = row['Store Rank'];
                     }
                 });
             }
@@ -1621,6 +1638,50 @@
             return penaltyPercentage * config.peerWeight;
         }
 
+        // New function: calculateProductivityRankScore - JavaScript equivalent of Python's calculate_productivity_rank_score
+        function calculateProductivityRankScore(rank) {
+            if (rank === null || rank === undefined) return 0;
+            if (rank <= 10) return 0;
+            if (rank <= 20) return 10;
+            if (rank <= 30) return 20;
+            if (rank <= 40) return 30;
+            if (rank <= 50) return 40;
+            if (rank <= 60) return 50;
+            if (rank <= 70) return 60;
+            if (rank <= 80) return 70;
+            if (rank <= 90) return 80;
+            return 100; // Ranks > 90
+        }
+
+        // New function: calculateProductivityVelocityScore - JavaScript equivalent of Python's calculate_productivity_velocity_score
+        function calculateProductivityVelocityScore(currentRank, previousRank) {
+            if (currentRank === null && previousRank === null) {
+                return 0;
+            }
+            if (currentRank === null && previousRank !== null) {
+                return 50; // High penalty for missing current data
+            }
+            if (previousRank === null && currentRank !== null) {
+                return 0; // No trend to compare (e.g., new store or first quarter data)
+            }
+            
+            const rankChange = currentRank - previousRank;
+            
+            if (rankChange <= 0) {
+                return 0; // No penalty for improvement or no change
+            } else if (rankChange <= 10) {
+                return 10;
+            } else if (rankChange <= 20) {
+                return 20;
+            } else if (rankChange <= 30) {
+                return 30;
+            } else if (rankChange <= 40) {
+                return 40;
+            } else {
+                return 50; // Capped penalty for large drops
+            }
+        }
+
         function scoreStores(weeklyData, storeAnomalies, brand, storeRanks, historicalData = null) {
             console.log(`Scoring stores for ${brand}...`);
             const storeField = brand === 'ulta' ? 'ULTAStoreNo' : 'SEPHORAStoreNo';
@@ -1711,6 +1772,10 @@
             allStores.forEach(store => {
                 const currentSales = currentTotals[store] || 0;
                 
+                // Initialize productivity scores for each store
+                let productivityRankScore = 0;
+                let productivityVelocityScore = 0;
+
                 // Anomaly score
                 const storeAnomalyData = storeAnomalies[store] || {};
                 const anomalyScore = calculateAnomalyScore(storeAnomalyData);
@@ -1728,8 +1793,29 @@
                 const peerScore = store in storeYoyPerformance ? 
                     calculatePeerScoreYoy(storeYoy, peerYoyAverage) : 0;
                 
+                // Productivity Rank Score (only for Sephora)
+                if (brand.toLowerCase() === 'sephora' && data.sephoraProductivityRanks) {
+                    const sephoraStoreNoStr = String(store).padStart(4, '0');
+                    const storeProductivityData = data.sephoraProductivityRanks[sephoraStoreNoStr];
+                    if (storeProductivityData) {
+                        const currentRank = storeProductivityData.current_rank;
+                        const previousRank = storeProductivityData.previous_rank;
+                        console.log(`Store ${store}: currentRank=${currentRank}, previousRank=${previousRank}`);
+                        if (currentRank !== null) {
+                            productivityRankScore = calculateProductivityRankScore(currentRank);
+                            console.log(`Store ${store}: calculated productivityRankScore=${productivityRankScore}`);
+                        } else if (previousRank !== null) {
+                            // If only previous rank is available, use it as current for rank score (might be a drop)
+                            productivityRankScore = calculateProductivityRankScore(previousRank);
+                            console.log(`Store ${store}: calculated productivityRankScore (from previous)=${productivityRankScore}`);
+                        }
+                        productivityVelocityScore = calculateProductivityVelocityScore(currentRank, previousRank);
+                        console.log(`Store ${store}: calculated productivityVelocityScore=${productivityVelocityScore}`);
+                    }
+                }
+                
                 // Total risk score
-                const totalScore = anomalyScore + yoyScore + peerScore;
+                const totalScore = anomalyScore + yoyScore + peerScore + productivityRankScore + productivityVelocityScore;
                 
                 // Skip stores with zero score (no issues detected) - matches Python exactly
                 if (totalScore === 0) return;
@@ -1747,7 +1833,9 @@
                     storeYoyPerformance: store in storeYoyPerformance ? 
                         Math.round(storeYoy * 10000) / 100 : 0, // Convert to percentage
                     rankPeerYoyAverage: Math.round(peerYoyAverage * 10000) / 100, // Convert to percentage
-                    hasYoyData: historicalSales > 0
+                    hasYoyData: historicalSales > 0,
+                    productivityRankScore: Math.round(productivityRankScore * 100) / 100, // New score
+                    productivityVelocityScore: Math.round(productivityVelocityScore * 100) / 100 // New score
                 });
             });
 
@@ -1963,13 +2051,18 @@
                         <button onclick="sortStores('${brand}', 'anomalyScore')" class="sort-btn">Anomaly</button>
                         <button onclick="sortStores('${brand}', 'yoyScore')" class="sort-btn">YoY</button>
                         <button onclick="sortStores('${brand}', 'peerScore')" class="sort-btn">Peer</button>
-                        <button onclick="sortStores('${brand}', 'currentWeekSales')" class="sort-btn" style="display: none;">Sales</button>
+                        <button onclick="sortStores('${brand}', 'productivityRankScore')" class="sort-btn">Door Rank</button>
+                        <button onclick="sortStores('${brand}', 'productivityVelocityScore')" class="sort-btn">Door Velocity</button>
                     </div>
                     <div class="store-table-header">
                         <div class="store-header-rank">Rank</div>
                         <div class="store-header-name">Store</div>
-                        <div class="store-header-scores">Scores (Total | Anomaly | YoY Comp Door | Peer)</div>
-                        <div class="store-header-sales" style="display: none;">Weekly Sales</div>
+                        <div class="store-header-score">Total Score</div>
+                        <div class="store-header-score">Anomaly</div>
+                        <div class="store-header-score">YoY Comp Door</div>
+                        <div class="store-header-score">Peer</div>
+                        <div class="store-header-score">Door Rank</div>
+                        <div class="store-header-score">Door Velocity</div>
                     </div>
                     <div class="store-table-body">
             `;
@@ -1990,13 +2083,12 @@
                             <div class="store-name">${store.storeName}</div>
                             <div class="store-rank-label">(${store.storeRank})</div>
                         </div>
-                        <div class="store-scores">
-                            <span class="total-score ${scoreClass}">${store.totalRiskScore}</span>
-                            <span class="component-scores">
-                                ${store.anomalyScore} | ${store.yoyScore} | ${store.peerScore}
-                            </span>
-                        </div>
-                        <div class="store-sales" style="display: none;">${store.currentWeekSales.toLocaleString()}</div>
+                        <div class="store-score-item">${store.totalRiskScore}</div>
+                        <div class="store-score-item">${store.anomalyScore}</div>
+                        <div class="store-score-item">${store.yoyScore}</div>
+                        <div class="store-score-item">${store.peerScore}</div>
+                        <div class="store-score-item">${store.productivityRankScore || 0}</div>
+                        <div class="store-score-item">${store.productivityVelocityScore || 0}</div>
                     </div>
                 `;
             });
@@ -2189,7 +2281,9 @@
                 if ((btnText.includes('total') && fieldText.includes('totalrisk')) ||
                     (btnText.includes('anomaly') && fieldText.includes('anomaly')) ||
                     (btnText.includes('yoy') && fieldText.includes('yoy')) ||
-                    (btnText.includes('peer') && fieldText.includes('peer'))) {
+                    (btnText.includes('peer') && fieldText.includes('peer')) ||
+                    (btnText.includes('door rank') && fieldText.includes('productivityrank')) ||
+                    (btnText.includes('door velocity') && fieldText.includes('productivityvelocity'))) {
                     btn.classList.add('active');
                     const direction = sortState[brand].direction === 'desc' ? '↓' : '↑';
                     btn.textContent = btn.textContent + ' ' + direction;
@@ -2253,6 +2347,8 @@
                 <div class="modal-detail-item"><strong>Historical Sales:</strong> $${store.historicalSales.toLocaleString()}</div>
                 <div class="modal-detail-item"><strong>Store YoY Performance:</strong> ${store.storeYoyPerformance}%</div>
                 <div class="modal-detail-item"><strong>Rank Peer YoY Average:</strong> ${store.rankPeerYoyAverage}%</div>
+                <div class="modal-detail-item"><strong>Door Rank Score:</strong> ${store.productivityRankScore}</div>
+                <div class="modal-detail-item"><strong>Door Velocity Score:</strong> ${store.productivityVelocityScore}</div>
             `;
             modal.style.display = 'flex'; // Use flex to center content
         }
@@ -2267,6 +2363,102 @@
             if (event.target === modal) {
                 modal.style.display = 'none';
             }
+        }
+
+        // New function: loadSephoraProductivityRanks - JavaScript equivalent of Python's load_sephora_productivity_ranks
+        async function loadSephoraProductivityRanks(url) {
+            console.log(`Loading Sephora productivity ranks from: ${url}`);
+            const response = await fetch(url);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
+            }
+            const arrayBuffer = await response.arrayBuffer();
+            const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+            // console.log("Workbook Sheet Names:", workbook.SheetNames);
+
+            const monthOrder = {
+                "JAN": 1, "FEB": 2, "MAR": 3, "APR": 4, "MAY": 5, "JUNE": 6,
+                "JUL": 7, "AUG": 8, "SEP": 9, "OCT": 10, "NOV": 11, "DEC": 12
+            };
+
+            const validMonthSheets = workbook.SheetNames.filter(s => monthOrder[s.toUpperCase()]);
+            // console.log("Valid Month Sheets:", validMonthSheets);
+            const sheetNamesSorted = validMonthSheets.sort((a, b) => monthOrder[a.toUpperCase()] - monthOrder[b.toUpperCase()]);
+            // console.log("Sorted Sheet Names:", sheetNamesSorted);
+
+            if (sheetNamesSorted.length < 2) {
+                console.warn("Less than two valid month sheets found in Sephora productivity rank file. Cannot calculate velocity.");
+                return {};
+            }
+
+            const currentMonthSheet = sheetNamesSorted[sheetNamesSorted.length - 1];
+            const previousMonthSheet = sheetNamesSorted[sheetNamesSorted.length - 2];
+
+            console.log(`Loading Sephora productivity ranks from sheets: ${previousMonthSheet} (previous) and ${currentMonthSheet} (current)`);
+
+            // Read raw data - header: 1 means the first row is data, not header.
+            // We need to manually extract headers and then map the data.
+            const rawCurrentData = XLSX.utils.sheet_to_json(workbook.Sheets[currentMonthSheet], { header: 1 });
+            const rawPreviousData = XLSX.utils.sheet_to_json(workbook.Sheets[previousMonthSheet], { header: 1 });
+            // console.log(`dfCurrentRaw for ${currentMonthSheet}:`, JSON.stringify(rawCurrentData.slice(0,5), null, 2));
+            // console.log(`dfPreviousRaw for ${previousMonthSheet}:`, JSON.stringify(rawPreviousData.slice(0,5), null, 2));
+
+            const processSheetData = (rawData) => {
+                if (rawData.length < 1) return [];
+                const headers = rawData[0].map(h => String(h).trim()); // Trim headers to remove whitespace
+                const dataRows = rawData.slice(1);
+
+                return dataRows.map(row => {
+                    let obj = {};
+                    headers.forEach((header, i) => {
+                        obj[header] = row[i];
+                    });
+                    return obj;
+                });
+            };
+
+            const dfCurrent = processSheetData(rawCurrentData);
+            const dfPrevious = processSheetData(rawPreviousData);
+            
+            const sephoraProductivityData = {};
+
+            // Process current month data
+            dfCurrent.forEach(row => {
+                const storeDoor = row['Store']; // Assuming 'Store' is the column name
+                const currentRank = row['Door Rank']; // Assuming 'Door Rank' is the column name
+                if (storeDoor !== undefined && storeDoor !== null && currentRank !== undefined && currentRank !== null) {
+                    const storeNoMatch = String(storeDoor).trim().match(/^(\d+)/);
+                    if (storeNoMatch) {
+                        const storeNo = storeNoMatch[1].padStart(4, '0');
+                        sephoraProductivityData[storeNo] = { 'current_rank': parseInt(currentRank), 'previous_rank': null };
+                    } else {
+                        console.debug(`Failed to parse store number from '${storeDoor}' in current month data.`);
+                    }
+                }
+            });
+
+            // Process previous month data and update existing entries
+            dfPrevious.forEach(row => {
+                const storeDoor = row['Store']; // Assuming 'Store' is the column name
+                const previousRank = row['Door Rank']; // Assuming 'Door Rank' is the column name
+                if (storeDoor !== undefined && storeDoor !== null && previousRank !== undefined && previousRank !== null) {
+                    const storeNoMatch = String(storeDoor).trim().match(/^(\d+)/);
+                    if (storeNoMatch) {
+                        const storeNo = storeNoMatch[1].padStart(4, '0');
+                        if (sephoraProductivityData[storeNo]) {
+                            sephoraProductivityData[storeNo]['previous_rank'] = parseInt(previousRank);
+                        } else {
+                            sephoraProductivityData[storeNo] = { 'current_rank': null, 'previous_rank': parseInt(previousRank) };
+                        }
+                    } else {
+                        console.debug(`Failed to parse store number from '${storeDoor}' in previous month data.`);
+                    }
+                }
+            });
+
+            console.log(`Finished loading Sephora productivity data. Total stores: ${Object.keys(sephoraProductivityData).length}`);
+            // console.log("Sephora Productivity Data:", sephoraProductivityData); // Log the final object
+            return sephoraProductivityData;
         }
     </script>
 </body>
